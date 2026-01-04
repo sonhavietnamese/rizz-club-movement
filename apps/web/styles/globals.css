@@ -1,0 +1,6 @@
+@import 'tailwindcss';
+
+@theme inline {
+  --font-proxima: var(--font-proxima-soft), system-ui, sans-serif;
+  --font-blur: var(--font-blur), system-ui, sans-serif;
+}

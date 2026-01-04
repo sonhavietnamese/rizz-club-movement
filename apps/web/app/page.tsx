@@ -33,9 +33,8 @@ export default function Page() {
   return (
     <main className="w-screen h-screen bg-black">
       <button
-        className="my-4 w-full rounded-md bg-indigo-600 px-3.5 py-2.5 text-sm font-semibold text-white shadow-sm disabled:bg-indigo-400"
+        className="my-4 w-full rounded-md px-3.5 py-2.5 text-sm font-semibold text-white shadow-sm disabled:bg-indigo-400"
         onClick={handleLogin}
-        // Always check that Privy is `ready` and the user is not `authenticated` before calling `login`
         disabled={!ready || authenticated}
       >
         Login
