@@ -1,0 +1,12 @@
+{
+    "mcpServers": {
+        "encore-mcp": {
+            "args": [
+                "mcp",
+                "run",
+                "--app=api-vio2"
+            ],
+            "command": "encore"
+        }
+    }
+}
