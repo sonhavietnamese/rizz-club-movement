@@ -1,10 +1,10 @@
 [package]
-name = "hello_blockchain"
-version = "1.0.0"
-authors = []
+name = "rizz_club"
+version = "1.0.1"
+authors = ["sonhavietnamese"]
 
 [addresses]
-hello_blockchain = "db2be04fdb5943e4760d008a50f8bcff6aff2e5d23b66bbd9d223c74e190996d"
+rizz_club = "57c90c360dae6a5322ba3dad226d6f0bb3ad0b43a83c2c72f34c7b3a08f7a1ee"
 
 [dev-addresses]
 
