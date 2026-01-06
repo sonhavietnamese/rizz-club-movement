@@ -1,4 +1,3 @@
-import { Service } from 'encore.dev/service'
 import { secret } from 'encore.dev/config'
 
 export const PRIVY_APP_ID = secret('PRIVY_APP_ID')()
@@ -10,4 +9,7 @@ export const PRIVY_AUTHORIZATION_PRIVATE_KEY = secret(
   'PRIVY_AUTHORIZATION_PRIVATE_KEY'
 )()
 
-export default new Service('hello')
+// Shinami secrets
+export const SHINAMI_GAS_STATION_ACCESS_KEY = secret(
+  'SHINAMI_GAS_STATION_ACCESS_KEY'
+)()

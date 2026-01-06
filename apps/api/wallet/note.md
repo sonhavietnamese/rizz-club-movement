@@ -1,3 +1,6 @@
+Create wallet
+
+```tsx
 import {
   AccountAddress,
   AccountAuthenticatorEd25519,
@@ -34,7 +37,6 @@ function normalizeHex(hex: string): string {
 const MODULE_ADDRESS =
   '57c90c360dae6a5322ba3dad226d6f0bb3ad0b43a83c2c72f34c7b3a08f7a1ee'
 const CREATE_PROFILE_FUNCTION = `${MODULE_ADDRESS}::profile::create_profile`
-const UPDATE_USERNAME_FUNCTION = `${MODULE_ADDRESS}::profile::update_username`
 
 // test verify access token
 export const createWallet = api(
@@ -158,10 +160,17 @@ export const sendTx = api(
       const rawTxn = await movement.transaction.build.simple({
         sender: address,
         data: {
-          function: UPDATE_USERNAME_FUNCTION,
+          function: CREATE_PROFILE_FUNCTION,
           typeArguments: [],
           functionArguments: [
-            'wwwww', // username: String
+            'sonhavietnamese', // username: String
+            ['github', 'twitter', 'linkedin'], // providers: vector<String>
+            [
+              'https://github.com/sonhavietnamese',
+              'https://twitter.com/sonhavietnamese',
+              'https://linkedin.com/in/sonhavietnamese',
+            ], // link_urls: vector<String>
+            [0, 0, 0, 0, 0], // configs: vector<u8>
           ],
         },
         withFeePayer: true,
@@ -233,3 +242,4 @@ interface Response {
   message: string
   profile?: unknown
 }
+```
