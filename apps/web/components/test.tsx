@@ -108,10 +108,38 @@ export default function Test() {
     console.log(data)
   }
 
+  const handleCreateProfile = async () => {
+    // send request to api to create profile
+    const response = await fetch(`${env.NEXT_PUBLIC_API_URL}/send-tx`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ userId: user?.id }),
+    })
+    const data = await response.json()
+    console.log(data)
+  }
+
+  const handleGetProfile = async () => {
+    // send request to api to get profile
+    const response = await fetch(`${env.NEXT_PUBLIC_API_URL}/get-profile`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ userId: user?.id }),
+    })
+    const data = await response.json()
+    console.log(data)
+  }
+
   return (
     <div className="flex flex-col gap-2">
       <button onClick={handleCreateWallet}>Create Wallet</button>
       <button onClick={handleSendTx}>Send Tx</button>
+      <button onClick={handleCreateProfile}>Create Profile</button>
+      <button onClick={handleGetProfile}>Get Profile</button>
       {/* <button onClick={handleUser}>Get User</button>
       <button onClick={handle}>Get Access Token</button>
       <button onClick={handleAddSigners}>Add Signers</button>

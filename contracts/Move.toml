@@ -4,7 +4,7 @@ version = "1.0.1"
 authors = ["sonhavietnamese"]
 
 [addresses]
-rizz_club = "57c90c360dae6a5322ba3dad226d6f0bb3ad0b43a83c2c72f34c7b3a08f7a1ee"
+rizz_club = "077b214ea7fcfec14a0df2e6d9015fa8ea8e93813ec94c93e53f9f77642b2db8"
 
 [dev-addresses]
 

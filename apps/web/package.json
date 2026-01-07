@@ -12,9 +12,12 @@
     "@aptos-labs/ts-sdk": "^5.2.0",
     "@privy-io/react-auth": "^3.10.0",
     "@t3-oss/env-nextjs": "^0.13.10",
+    "clsx": "^2.1.1",
+    "motion": "^12.24.0",
     "next": "16.1.1",
     "react": "19.2.3",
     "react-dom": "19.2.3",
+    "tailwind-merge": "^3.4.0",
     "viem": "^2.43.4",
     "zod": "^4.3.4",
     "zustand": "^5.0.9"

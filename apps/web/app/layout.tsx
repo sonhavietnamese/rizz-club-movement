@@ -1,5 +1,6 @@
 import Providers from '@/components/providers'
 import '@/styles/globals.css'
+import { LayoutGroup } from 'motion/react'
 import type { Metadata } from 'next'
 import { Geist } from 'next/font/google'
 import localFont from 'next/font/local'
@@ -46,7 +47,9 @@ export default function RootLayout({
       <body
         className={`${geistSans.variable} ${proximaSoft.variable} ${blur.variable} antialiased`}
       >
-        <Providers>{children}</Providers>
+        <Providers>
+          <LayoutGroup>{children}</LayoutGroup>
+        </Providers>
       </body>
     </html>
   )
