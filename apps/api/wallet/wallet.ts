@@ -10,47 +10,25 @@ import { api } from 'encore.dev/api'
 import { toHex } from 'viem'
 import { movement, privy, shinami } from './libs'
 import { PRIVY_AUTHORIZATION_PRIVATE_KEY } from './secrets'
+import {
+  RIZZ_CLUB_MODULE_FUNCTIONS,
+  normalizeEd25519PublicKey,
+  normalizeHex,
+} from '@repo/shared'
 
-/**
- * Normalizes a hex string for Ed25519 public key (32 bytes = 64 hex chars).
- * Removes leading '00' padding if present, as Privy returns 33-byte keys.
- */
-function normalizeEd25519PublicKey(hex: string): string {
-  const cleaned = hex.startsWith('0x') ? hex.slice(2) : hex
-  // Privy returns 33-byte keys (66 hex chars) with leading 00, but Ed25519 needs 32 bytes (64 hex chars)
-  if (cleaned.length === 66 && cleaned.startsWith('00')) {
-    return cleaned.slice(2)
-  }
-  return cleaned
-}
-
-/**
- * Normalizes a hex string by removing the '0x' prefix if present.
- */
-function normalizeHex(hex: string): string {
-  return hex.startsWith('0x') ? hex.slice(2) : hex
-}
-
-const MODULE_ADDRESS =
-  '57c90c360dae6a5322ba3dad226d6f0bb3ad0b43a83c2c72f34c7b3a08f7a1ee'
-const CREATE_PROFILE_FUNCTION = `${MODULE_ADDRESS}::profile::create_profile`
-const UPDATE_USERNAME_FUNCTION = `${MODULE_ADDRESS}::profile::update_username`
-
-// test verify access token
 export const createWallet = api(
-  { expose: true, method: 'POST', path: '/create' },
+  { expose: true, method: 'POST', path: '/create-wallet' },
   async ({ userId }: { userId: string }): Promise<Response> => {
     try {
       const { id, address, chain_type } = await privy
         .wallets()
         .create({ chain_type: 'movement', owner: { user_id: userId } }) // const verifiedClaims = await privy.utils().auth().verifyAuthToken(token)
 
-      console.log(id, address, chain_type)
+      return { message: 'wallet created', address, id, chain_type }
     } catch (error) {
       console.log(`Token verification failed with error ${error}.`)
+      throw error
     }
-
-    return { message: 'wallet created' }
   }
 )
 
@@ -59,7 +37,6 @@ export const getProfile = api(
   async ({ userId }: { userId: string }): Promise<Response> => {
     try {
       const user = await privy.users()._get(userId)
-      console.log('user', user)
       const walletsWithSessionSigners = user.linked_accounts.filter(
         (account) =>
           account.type === 'wallet' && 'id' in account && account.delegated
@@ -91,16 +68,11 @@ export const getProfile = api(
         throw new Error('Wallet information is incomplete')
       }
 
-      const publicKey = normalizeEd25519PublicKey(movementWallet.public_key)
       const address = AccountAddress.from(movementWallet.address)
-
-      const MODULE_ADDRESS =
-        '57c90c360dae6a5322ba3dad226d6f0bb3ad0b43a83c2c72f34c7b3a08f7a1ee'
-      const GET_MESSAGE_FUNCTION = `${MODULE_ADDRESS}::profile::get_profile`
 
       const profile = await movement.view({
         payload: {
-          function: GET_MESSAGE_FUNCTION,
+          function: RIZZ_CLUB_MODULE_FUNCTIONS.PROFILE.GET_PROFILE,
           functionArguments: [address],
         },
       })
@@ -158,7 +130,7 @@ export const sendTx = api(
       const rawTxn = await movement.transaction.build.simple({
         sender: address,
         data: {
-          function: UPDATE_USERNAME_FUNCTION,
+          function: RIZZ_CLUB_MODULE_FUNCTIONS.PROFILE.UPDATE_USERNAME,
           typeArguments: [],
           functionArguments: [
             'wwwww', // username: String
@@ -232,4 +204,7 @@ export const sendTx = api(
 interface Response {
   message: string
   profile?: unknown
+  address?: string
+  id?: string
+  chain_type?: string
 }

@@ -1,3 +1,13 @@
-import { RIZZ_CLUB_MODULE_ADDRESSES } from './constants'
+import {
+  RIZZ_CLUB_MODULE_ADDRESSES,
+  RIZZ_CLUB_MODULE_FUNCTIONS,
+} from './constants'
 
-export { RIZZ_CLUB_MODULE_ADDRESSES }
+import { normalizeEd25519PublicKey, normalizeHex } from './util'
+
+export {
+  RIZZ_CLUB_MODULE_ADDRESSES,
+  RIZZ_CLUB_MODULE_FUNCTIONS,
+  normalizeEd25519PublicKey,
+  normalizeHex,
+}

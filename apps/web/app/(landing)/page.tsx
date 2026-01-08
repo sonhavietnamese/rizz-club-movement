@@ -1,42 +1,98 @@
 'use client'
 
+import { env } from '@/env'
+import { useCreateWallet } from '@/hooks/use-create-wallet'
 import { CONTENTS } from '@/lib/constants'
 import { cn } from '@/lib/utils'
-import { useLogin, useLogout, usePrivy, useSigners } from '@privy-io/react-auth'
-import { useEffect, useState } from 'react'
+import { useLogin, usePrivy, useSigners } from '@privy-io/react-auth'
 import { AnimatePresence, motion } from 'motion/react'
+import { useState } from 'react'
 
 export default function Page() {
   const [userType, setUserType] = useState<'fans' | 'kols'>('fans')
   const [isLoading, setIsLoading] = useState(false)
 
-  const { ready, authenticated } = usePrivy()
+  const { ready, user } = usePrivy()
   const { addSigners } = useSigners()
 
+  const { mutate: createWallet } = useCreateWallet()
+
   const { login } = useLogin({
-    onComplete: async ({ user, isNewUser }) => {
-      console.log('User logged in successfully', user)
+    onComplete: async ({ user }) => {
+      const existedWallets = user.linkedAccounts?.filter(
+        (account) =>
+          account.type === 'wallet' &&
+          'id' in account &&
+          'chainType' in account &&
+          (account.chainType === 'movement' || account.chainType === 'aptos')
+      )
 
-      // Perform actions for new users
-      const signers = await addSigners({
-        address: '0xe2bD27752ec8221492b24dA776E11b048794C46D',
-        signers: [
-          {
-            signerId: 'evx3jdgy9q0cyj7jwbvt3roc',
-          },
-        ],
-      })
+      if (!existedWallets || existedWallets.length === 0) {
+        if (user?.id) {
+          createWallet(
+            { userId: user.id },
+            {
+              onSuccess: async ({ address }) => {
+                console.log('Wallet created successfully', address)
 
-      console.log('Assigned signers', signers)
-    },
-    onError: (error) => {
-      console.error('Login failed', error)
-    },
-  })
+                // Check if signers already exist for this wallet
+                const walletAccount = user.linkedAccounts?.find(
+                  (account) =>
+                    account.type === 'wallet' &&
+                    'address' in account &&
+                    account.address === address
+                )
 
-  const { logout } = useLogout({
-    onSuccess: () => {
-      console.log('User logged out successfully')
+                // Only add signers if wallet doesn't have delegated signers yet
+                if (
+                  walletAccount &&
+                  'delegated' in walletAccount &&
+                  !walletAccount.delegated
+                ) {
+                  await addSigners({
+                    address,
+                    signers: [{ signerId: env.NEXT_PUBLIC_SIGNER_ID }],
+                  })
+                    .then(() => {
+                      console.log('Signers added successfully')
+                    })
+                    .catch((error) => {
+                      console.error('Failed to add signers', error)
+                    })
+                } else {
+                  console.log('Signers already exist for this wallet')
+                }
+              },
+              onError: (error) => {
+                console.error('Failed to create wallet', error)
+              },
+            }
+          )
+        }
+      } else {
+        const movementWallet = existedWallets[0]
+        if (
+          movementWallet &&
+          movementWallet.type === 'wallet' &&
+          'address' in movementWallet &&
+          'delegated' in movementWallet &&
+          !movementWallet.delegated
+        ) {
+          const walletAddress = (movementWallet as { address: string }).address
+          await addSigners({
+            address: walletAddress,
+            signers: [{ signerId: env.NEXT_PUBLIC_SIGNER_ID }],
+          })
+            .then(() => {
+              console.log('Signers added successfully to existing wallet')
+            })
+            .catch((error) => {
+              console.error('Failed to add signers', error)
+            })
+        } else {
+          console.log('Signers already exist for the wallet')
+        }
+      }
     },
   })
 
@@ -51,9 +107,50 @@ export default function Page() {
     }
   }
 
-  useEffect(() => {
-    authenticated && console.log('authenticated', authenticated)
-  }, [authenticated])
+  const testCreateTx = async () => {
+    const foundWallet = user?.linkedAccounts?.find(
+      (account) =>
+        account.type === 'wallet' &&
+        'id' in account &&
+        'chainType' in account &&
+        (account.chainType === 'movement' || account.chainType === 'aptos')
+    )
+
+    if (
+      foundWallet &&
+      foundWallet.type === 'wallet' &&
+      'address' in foundWallet &&
+      'delegated' in foundWallet
+    ) {
+      const walletAddress = (foundWallet as { address: string }).address
+      const isDelegated = (foundWallet as { delegated: boolean }).delegated
+
+      if (!isDelegated) {
+        await addSigners({
+          address: walletAddress,
+          signers: [{ signerId: env.NEXT_PUBLIC_SIGNER_ID }],
+        })
+          .then(() => {
+            console.log('Signers added successfully')
+          })
+          .catch((error) => {
+            console.error('Failed to add signers', error)
+          })
+      } else {
+        console.log('Signers already exist for this wallet')
+      }
+    }
+
+    const response = await fetch(`${env.NEXT_PUBLIC_API_URL}/send-tx`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ userId: user?.id }),
+    })
+    const data = await response.json()
+    console.log(data)
+  }
 
   return (
     <main className="w-screen h-screen bg-background flex items-center justify-center">
@@ -235,12 +332,6 @@ export default function Page() {
                       </svg>
                     </figure>
                   )}
-                </button>
-                <button
-                  className="rounded-full px-5 py-3.5 pt-4 w-fit bg-[#F480ED] text-white font-proxima text-[24px] leading-none font-bold"
-                  onClick={() => logout()}
-                >
-                  Logout
                 </button>
               </div>
             </motion.div>
