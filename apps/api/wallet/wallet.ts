@@ -6,15 +6,15 @@ import {
   generateSigningMessageForTransaction,
 } from '@aptos-labs/ts-sdk'
 import { AuthorizationContext } from '@privy-io/node'
-import { api } from 'encore.dev/api'
-import { toHex } from 'viem'
-import { movement, privy, shinami } from './libs'
-import { PRIVY_AUTHORIZATION_PRIVATE_KEY } from './secrets'
 import {
   RIZZ_CLUB_MODULE_FUNCTIONS,
   normalizeEd25519PublicKey,
   normalizeHex,
 } from '@repo/shared'
+import { api } from 'encore.dev/api'
+import { toHex } from 'viem'
+import { movement, privy, shinami } from './libs'
+import { PRIVY_AUTHORIZATION_PRIVATE_KEY } from './secrets'
 
 export const createWallet = api(
   { expose: true, method: 'POST', path: '/create-wallet' },

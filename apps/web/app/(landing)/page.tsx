@@ -1,5 +1,6 @@
 'use client'
 
+import { AnimatedBackground } from '@/components/animated-background'
 import { env } from '@/env'
 import { useCreateWallet } from '@/hooks/use-create-wallet'
 import { CONTENTS } from '@/lib/constants'
@@ -22,8 +23,6 @@ export default function Page() {
       const existedWallets = user.linkedAccounts?.filter(
         (account) =>
           account.type === 'wallet' &&
-          'id' in account &&
-          'chainType' in account &&
           (account.chainType === 'movement' || account.chainType === 'aptos')
       )
 
@@ -74,8 +73,6 @@ export default function Page() {
         if (
           movementWallet &&
           movementWallet.type === 'wallet' &&
-          'address' in movementWallet &&
-          'delegated' in movementWallet &&
           !movementWallet.delegated
         ) {
           const walletAddress = (movementWallet as { address: string }).address
@@ -111,19 +108,12 @@ export default function Page() {
     const foundWallet = user?.linkedAccounts?.find(
       (account) =>
         account.type === 'wallet' &&
-        'id' in account &&
-        'chainType' in account &&
         (account.chainType === 'movement' || account.chainType === 'aptos')
     )
 
-    if (
-      foundWallet &&
-      foundWallet.type === 'wallet' &&
-      'address' in foundWallet &&
-      'delegated' in foundWallet
-    ) {
-      const walletAddress = (foundWallet as { address: string }).address
-      const isDelegated = (foundWallet as { delegated: boolean }).delegated
+    if (foundWallet && foundWallet.type === 'wallet') {
+      const walletAddress = foundWallet.address
+      const isDelegated = foundWallet.delegated
 
       if (!isDelegated) {
         await addSigners({
@@ -154,14 +144,7 @@ export default function Page() {
 
   return (
     <main className="w-screen h-screen bg-background flex items-center justify-center">
-      <video
-        draggable={false}
-        src={'/videos/1228.mp4'}
-        className="w-full h-full object-cover absolute top-0 left-0 z-0"
-        autoPlay
-        muted
-        loop
-      />
+      <AnimatedBackground variant="landing" />
       <motion.section
         initial={{
           width: 0,
