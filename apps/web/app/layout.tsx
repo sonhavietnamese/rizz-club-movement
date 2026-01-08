@@ -38,7 +38,9 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
-      <body className={`${proximaSoft.variable} ${blur.variable} antialiased`}>
+      <body
+        className={`${proximaSoft.variable} ${blur.variable} antialiased p-6 w-screen h-screen`}
+      >
         <Providers>
           <LayoutGroup>{children}</LayoutGroup>
         </Providers>

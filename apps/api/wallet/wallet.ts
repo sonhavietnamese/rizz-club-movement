@@ -41,9 +41,9 @@ export const getProfile = api(
         (account) =>
           account.type === 'wallet' && 'id' in account && account.delegated
       )
-      const authorizationContext: AuthorizationContext = {
-        authorization_private_keys: [PRIVY_AUTHORIZATION_PRIVATE_KEY],
-      }
+      // const authorizationContext: AuthorizationContext = {
+      //   authorization_private_keys: [PRIVY_AUTHORIZATION_PRIVATE_KEY],
+      // }
       console.log('walletsWithSessionSigners', walletsWithSessionSigners)
 
       // Get the first Movement/Aptos wallet
@@ -60,30 +60,53 @@ export const getProfile = api(
         !('public_key' in movementWallet) ||
         !('address' in movementWallet)
       ) {
-        throw new Error('No Movement/Aptos wallet found')
+        return { message: 'no profile', profile: null }
       }
 
       const walletId = movementWallet.id
       if (!walletId || !movementWallet.public_key || !movementWallet.address) {
-        throw new Error('Wallet information is incomplete')
+        return { message: 'no profile', profile: null }
       }
 
       const address = AccountAddress.from(movementWallet.address)
 
-      const profile = await movement.view({
-        payload: {
-          function: RIZZ_CLUB_MODULE_FUNCTIONS.PROFILE.GET_PROFILE,
-          functionArguments: [address],
-        },
-      })
+      try {
+        const profile = await movement.view({
+          payload: {
+            function: RIZZ_CLUB_MODULE_FUNCTIONS.PROFILE.GET_PROFILE,
+            functionArguments: [address],
+          },
+        })
 
-      console.log('profile', profile)
-      return { message: 'profile fetched', profile }
+        console.log('profile', profile)
+        // The profile is returned as an array from Move view function
+        // We need to parse it into the expected structure
+        // Assuming the structure matches the Profile struct from the contract
+        const typedProfile = profile as unknown as {
+          username: string
+          links: Array<{ provider: string; link: string }>
+          pfp: string
+          configs: number[]
+          followers: string[]
+          following: string[]
+          types: number[]
+        }
+        return { message: 'profile fetched', profile: typedProfile }
+      } catch (viewError: any) {
+        // Check if error is E_NO_PROFILE (profile doesn't exist)
+        if (
+          viewError?.message?.includes('not_found') ||
+          viewError?.message?.includes('E_NO_PROFILE') ||
+          viewError?.errorCode === 0
+        ) {
+          return { message: 'no profile', profile: null }
+        }
+        throw viewError
+      }
     } catch (error) {
-      console.log(`Token verification failed with error ${error}.`)
+      console.log(`Error fetching profile: ${error}.`)
+      return { message: 'no profile', profile: null }
     }
-
-    return { message: 'tx sent' }
   }
 )
 
@@ -203,7 +226,15 @@ export const sendTx = api(
 
 interface Response {
   message: string
-  profile?: unknown
+  profile?: {
+    username: string
+    links: Array<{ provider: string; link: string }>
+    pfp: string
+    configs: number[]
+    followers: string[]
+    following: string[]
+    types: number[]
+  } | null
   address?: string
   id?: string
   chain_type?: string

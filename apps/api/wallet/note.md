@@ -243,3 +243,43 @@ interface Response {
   profile?: unknown
 }
 ```
+
+```tsx
+const testCreateTx = async () => {
+  const foundWallet = user?.linkedAccounts?.find(
+    (account) =>
+      account.type === 'wallet' &&
+      (account.chainType === 'movement' || account.chainType === 'aptos')
+  )
+
+  if (foundWallet && foundWallet.type === 'wallet') {
+    const walletAddress = foundWallet.address
+    const isDelegated = foundWallet.delegated
+
+    if (!isDelegated) {
+      await addSigners({
+        address: walletAddress,
+        signers: [{ signerId: env.NEXT_PUBLIC_SIGNER_ID }],
+      })
+        .then(() => {
+          console.log('Signers added successfully')
+        })
+        .catch((error) => {
+          console.error('Failed to add signers', error)
+        })
+    } else {
+      console.log('Signers already exist for this wallet')
+    }
+  }
+
+  const response = await fetch(`${env.NEXT_PUBLIC_API_URL}/send-tx`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({ userId: user?.id }),
+  })
+  const data = await response.json()
+  console.log(data)
+}
+```

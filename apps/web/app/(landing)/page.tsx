@@ -1,29 +1,66 @@
 'use client'
 
 import { AnimatedBackground } from '@/components/animated-background'
+import { AnimatedFrame } from '@/components/animated-frame'
 import { env } from '@/env'
 import { useCreateWallet } from '@/hooks/use-create-wallet'
+import { useGetProfile } from '@/hooks/use-get-profile'
 import { CONTENTS } from '@/lib/constants'
 import { cn } from '@/lib/utils'
 import { useLogin, usePrivy, useSigners } from '@privy-io/react-auth'
 import { AnimatePresence, motion } from 'motion/react'
-import { useState } from 'react'
+import { useRouter } from 'next/navigation'
+import { useEffect, useState } from 'react'
 
 export default function Page() {
-  const [userType, setUserType] = useState<'fans' | 'kols'>('fans')
+  const [userType, setUserType] = useState<'fans' | 'kols'>('kols')
   const [isLoading, setIsLoading] = useState(false)
-
-  const { ready, user } = usePrivy()
+  const router = useRouter()
+  const { ready, authenticated, user } = usePrivy()
   const { addSigners } = useSigners()
 
   const { mutate: createWallet } = useCreateWallet()
+  const { data: profileData, isLoading: isLoadingProfile } = useGetProfile(
+    user?.id,
+    ready && authenticated && !!user?.id
+  )
+
+  // Show loading frame when checking profile
+  const isCheckingProfile =
+    ready && authenticated && (isLoadingProfile || !profileData)
+
+  // Auto-check profile when authenticated and navigate accordingly
+  useEffect(() => {
+    if (
+      ready &&
+      authenticated &&
+      user?.id &&
+      !isLoadingProfile &&
+      profileData
+    ) {
+      // Navigate based on profile existence
+      const timeoutId = setTimeout(() => {
+        if (profileData.profile && profileData.profile.username) {
+          // Profile exists, navigate to user page
+          router.push(`/u/${profileData.profile.username}`)
+        } else {
+          // No profile, navigate to register
+          router.push('/register')
+        }
+      }, 0)
+      return () => clearTimeout(timeoutId)
+    }
+  }, [ready, authenticated, user?.id, profileData, isLoadingProfile, router])
+
+  const handleWalletSetupComplete = async () => {
+    // Wallet and signers are set up, profile will be checked automatically
+    // via the useGetProfile hook when user.id is available
+  }
 
   const { login } = useLogin({
     onComplete: async ({ user }) => {
       const existedWallets = user.linkedAccounts?.filter(
-        (account) =>
-          account.type === 'wallet' &&
-          (account.chainType === 'movement' || account.chainType === 'aptos')
+        (account) => account.type === 'wallet' && account.chainType === 'aptos'
       )
 
       if (!existedWallets || existedWallets.length === 0) {
@@ -32,17 +69,13 @@ export default function Page() {
             { userId: user.id },
             {
               onSuccess: async ({ address }) => {
-                console.log('Wallet created successfully', address)
-
-                // Check if signers already exist for this wallet
                 const walletAccount = user.linkedAccounts?.find(
                   (account) =>
-                    account.type === 'wallet' &&
-                    'address' in account &&
-                    account.address === address
+                    account.type === 'wallet' && account.address === address
                 )
 
-                // Only add signers if wallet doesn't have delegated signers yet
+                console.log('user')
+
                 if (
                   walletAccount &&
                   'delegated' in walletAccount &&
@@ -54,16 +87,20 @@ export default function Page() {
                   })
                     .then(() => {
                       console.log('Signers added successfully')
+                      handleWalletSetupComplete()
                     })
                     .catch((error) => {
                       console.error('Failed to add signers', error)
+                      setIsLoading(false) // Stop loading on error
                     })
                 } else {
                   console.log('Signers already exist for this wallet')
+                  handleWalletSetupComplete()
                 }
               },
               onError: (error) => {
                 console.error('Failed to create wallet', error)
+                setIsLoading(false) // Stop loading on error
               },
             }
           )
@@ -82,12 +119,15 @@ export default function Page() {
           })
             .then(() => {
               console.log('Signers added successfully to existing wallet')
+              handleWalletSetupComplete()
             })
             .catch((error) => {
               console.error('Failed to add signers', error)
+              setIsLoading(false) // Stop loading on error
             })
         } else {
           console.log('Signers already exist for the wallet')
+          handleWalletSetupComplete()
         }
       }
     },
@@ -97,74 +137,23 @@ export default function Page() {
     setIsLoading(true)
     try {
       login()
+      // Don't set isLoading to false here - it will be set to false after profile fetch completes
     } catch (error) {
       console.error('Login failed', error)
-    } finally {
-      setIsLoading(false)
+      setIsLoading(false) // Only set to false on error
     }
   }
 
-  const testCreateTx = async () => {
-    const foundWallet = user?.linkedAccounts?.find(
-      (account) =>
-        account.type === 'wallet' &&
-        (account.chainType === 'movement' || account.chainType === 'aptos')
-    )
-
-    if (foundWallet && foundWallet.type === 'wallet') {
-      const walletAddress = foundWallet.address
-      const isDelegated = foundWallet.delegated
-
-      if (!isDelegated) {
-        await addSigners({
-          address: walletAddress,
-          signers: [{ signerId: env.NEXT_PUBLIC_SIGNER_ID }],
-        })
-          .then(() => {
-            console.log('Signers added successfully')
-          })
-          .catch((error) => {
-            console.error('Failed to add signers', error)
-          })
-      } else {
-        console.log('Signers already exist for this wallet')
-      }
-    }
-
-    const response = await fetch(`${env.NEXT_PUBLIC_API_URL}/send-tx`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({ userId: user?.id }),
-    })
-    const data = await response.json()
-    console.log(data)
-  }
+  // Determine which view to show
+  const showLoading = !ready || isCheckingProfile
+  const showLanding = ready && !authenticated
 
   return (
-    <main className="w-screen h-screen bg-background flex items-center justify-center">
+    <main className="w-full h-full bg-background flex items-center justify-center">
       <AnimatedBackground variant="landing" />
-      <motion.section
-        initial={{
-          width: 0,
-          height: 0,
-        }}
-        animate={{
-          width: ready ? 500 : 70,
-          height: ready ? 440 : 70,
-        }}
-        transition={{
-          ease: 'easeInOut',
-        }}
-        className={cn(
-          'z-10 bg-white squircle rounded-[130px] overflow-hidden relative p-6',
-          "before:content-[''] before:absolute before:top-0 before:left-0 before:w-full before:h-full before:bg-[url('/textures/02.png')] before:z-0",
-          'before:bg-blend-lighten before:opacity-20 before:bg-cover before:bg-center'
-        )}
-      >
+      <AnimatedFrame variant={showLoading ? 'loading' : 'landing'}>
         <AnimatePresence>
-          {!ready && (
+          {showLoading && (
             <motion.figure
               initial={{
                 opacity: 1,
@@ -192,7 +181,7 @@ export default function Page() {
             </motion.figure>
           )}
 
-          {ready && (
+          {showLanding && (
             <motion.div
               initial={{
                 opacity: 0,
@@ -290,11 +279,11 @@ export default function Page() {
 
               <div className="flex w-full absolute bottom-8 right-0 px-9 justify-end z-10">
                 <button
-                  className="rounded-full px-5 py-3.5 pt-4 w-fit bg-[#F480ED] text-white font-proxima text-[24px] leading-none font-bold"
+                  className="rounded-full px-5 py-3.5 pt-4 w-fit bg-[#F480ED] text-white font-proxima text-[24px] leading-none font-bold disabled:opacity-50 disabled:cursor-not-allowed"
                   onClick={handleLogin}
-                  disabled={!ready}
+                  disabled={!ready || isLoading || isLoadingProfile}
                 >
-                  {!isLoading ? (
+                  {!isLoading && !isLoadingProfile ? (
                     CONTENTS[userType].button
                   ) : (
                     <figure className="w-6 h-6 animate-spin duration-75">
@@ -320,7 +309,7 @@ export default function Page() {
             </motion.div>
           )}
         </AnimatePresence>
-      </motion.section>
+      </AnimatedFrame>
     </main>
   )
 }
