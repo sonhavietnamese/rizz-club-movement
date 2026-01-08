@@ -2,7 +2,7 @@
 
 import { CONTENTS } from '@/lib/constants'
 import { cn } from '@/lib/utils'
-import { useLogin, useLogout, usePrivy } from '@privy-io/react-auth'
+import { useLogin, useLogout, usePrivy, useSigners } from '@privy-io/react-auth'
 import { useEffect, useState } from 'react'
 import { AnimatePresence, motion } from 'motion/react'
 
@@ -11,13 +11,23 @@ export default function Page() {
   const [isLoading, setIsLoading] = useState(false)
 
   const { ready, authenticated } = usePrivy()
+  const { addSigners } = useSigners()
 
   const { login } = useLogin({
-    onComplete: ({ user, isNewUser }) => {
+    onComplete: async ({ user, isNewUser }) => {
       console.log('User logged in successfully', user)
-      if (isNewUser) {
-        // Perform actions for new users
-      }
+
+      // Perform actions for new users
+      const signers = await addSigners({
+        address: '0xe2bD27752ec8221492b24dA776E11b048794C46D',
+        signers: [
+          {
+            signerId: 'evx3jdgy9q0cyj7jwbvt3roc',
+          },
+        ],
+      })
+
+      console.log('Assigned signers', signers)
     },
     onError: (error) => {
       console.error('Login failed', error)
