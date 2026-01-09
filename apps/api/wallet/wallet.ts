@@ -10,7 +10,7 @@ import {
   RIZZ_CLUB_MODULE_FUNCTIONS,
   normalizeEd25519PublicKey,
   normalizeHex,
-} from '@repo/shared'
+} from '../shared/index.js'
 import { api } from 'encore.dev/api'
 import { toHex } from 'viem'
 import { movement, privy, shinami } from './libs'
